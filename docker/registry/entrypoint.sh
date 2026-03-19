@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-CREDENTIALS_FILE="${REGISTRY_MGR_CREDENTIALS_FILE:-/run/secrets/registry_credentials}"
+CREDENTIALS_FILE="${REGISTRY_CREDENTIALS_FILE:-/run/secrets/registry_credentials}"
 GC_ENABLED="${GC_ENABLED:-true}"
 GC_TIME="${GC_TIME:-03:00}"
 REGISTRY_PID_FILE="/var/run/registry.pid"

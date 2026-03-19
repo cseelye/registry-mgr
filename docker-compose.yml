@@ -27,8 +27,8 @@ services:
     secrets:
       - registry_credentials
     environment:
-      REGISTRY_MGR_URL: http://registry:5000
-      REGISTRY_MGR_CREDENTIALS_FILE: /run/secrets/registry_credentials
+      REGISTRY_URL: http://registry:5000
+      REGISTRY_CREDENTIALS_FILE: /run/secrets/registry_credentials
     restart: unless-stopped
     depends_on:
       - registry
@@ -42,8 +42,8 @@ services:
     secrets:
       - registry_credentials
     environment:
-      REGISTRY_MGR_URL: http://registry:5000
-      REGISTRY_MGR_CREDENTIALS_FILE: /run/secrets/registry_credentials
+      REGISTRY_URL: http://registry:5000
+      REGISTRY_CREDENTIALS_FILE: /run/secrets/registry_credentials
     depends_on:
       - registry
     networks:

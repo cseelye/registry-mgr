@@ -49,7 +49,7 @@ func Load(configFile string) (*Config, error) {
 
 	// Layer 2: credentials file (path may come from yaml or env)
 	credFile := cfg.CredentialsFile
-	if v := os.Getenv("REGISTRY_MGR_CREDENTIALS_FILE"); v != "" {
+	if v := os.Getenv("REGISTRY_CREDENTIALS_FILE"); v != "" {
 		credFile = v
 	}
 	if credFile != "" {
@@ -59,7 +59,7 @@ func Load(configFile string) (*Config, error) {
 	}
 
 	// Layer 3: environment variables
-	if v := os.Getenv("REGISTRY_MGR_URL"); v != "" {
+	if v := os.Getenv("REGISTRY_URL"); v != "" {
 		cfg.RegistryURL = v
 	}
 	if v := os.Getenv("REGISTRY_MGR_USERNAME"); v != "" {

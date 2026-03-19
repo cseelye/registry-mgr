@@ -78,10 +78,10 @@ Pass the config file path with `--config /path/to/config.yaml`.
 
 | Variable | Description |
 |---|---|
-| `REGISTRY_MGR_URL` | Registry URL |
+| `REGISTRY_URL` | Registry URL |
 | `REGISTRY_MGR_USERNAME` | Username |
 | `REGISTRY_MGR_PASSWORD` | Password |
-| `REGISTRY_MGR_CREDENTIALS_FILE` | Path to `username:password` file |
+| `REGISTRY_CREDENTIALS_FILE` | Path to `username:password` file |
 | `WEBUI_PORT` | Web UI listen port (default `5080`) |
 | `WEBUI_LISTEN` | Web UI listen address (default `0.0.0.0`) |
 

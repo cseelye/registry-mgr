@@ -91,7 +91,7 @@ func run(cmd *cobra.Command, args []string) error {
 		cfg.ListenAddr = listenAddr
 	}
 	if cfg.RegistryURL == "" {
-		return fmt.Errorf("registry URL is required (--registry, REGISTRY_MGR_URL, or config file)")
+		return fmt.Errorf("registry URL is required (--registry, REGISTRY_URL, or config file)")
 	}
 
 	funcMap := template.FuncMap{
