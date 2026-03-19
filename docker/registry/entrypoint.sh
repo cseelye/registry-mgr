@@ -1,7 +1,6 @@
 #!/bin/sh
 set -e
 
-CREDENTIALS_FILE="${REGISTRY_CREDENTIALS_FILE:-/run/secrets/registry_credentials}"
 GC_ENABLED="${GC_ENABLED:-true}"
 GC_TIME="${GC_TIME:-03:00}"
 REGISTRY_PID_FILE="/var/run/registry.pid"
@@ -9,17 +8,16 @@ REGISTRY_PID_FILE="/var/run/registry.pid"
 # ---------------------------------------------------------------------------
 # Parse credentials and generate htpasswd
 # ---------------------------------------------------------------------------
-if [ ! -f "$CREDENTIALS_FILE" ]; then
-    echo "ERROR: credentials file not found at $CREDENTIALS_FILE" >&2
+if [ -z "$REGISTRY_CREDENTIALS" ]; then
+    echo "ERROR: REGISTRY_CREDENTIALS env var is not set" >&2
     exit 1
 fi
 
-line=$(cat "$CREDENTIALS_FILE" | tr -d '\n\r')
-REGISTRY_USER="${line%%:*}"
-REGISTRY_PASS="${line#*:}"
+REGISTRY_USER="${REGISTRY_CREDENTIALS%%:*}"
+REGISTRY_PASS="${REGISTRY_CREDENTIALS#*:}"
 
 if [ -z "$REGISTRY_USER" ] || [ -z "$REGISTRY_PASS" ]; then
-    echo "ERROR: invalid credentials file format (expected username:password)" >&2
+    echo "ERROR: invalid REGISTRY_CREDENTIALS format (expected username:password)" >&2
     exit 1
 fi
 

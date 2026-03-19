@@ -80,9 +80,16 @@ func run(cmd *cobra.Command, args []string) error {
 		cfg.Password = password
 	}
 	if credFile != "" {
-		if err := config.ApplyCredentialsFile(cfg, credFile); err != nil {
-			return err
+		data, err := os.ReadFile(credFile)
+		if err != nil {
+			return fmt.Errorf("reading credentials file: %w", err)
 		}
+		parts := strings.SplitN(strings.TrimSpace(string(data)), ":", 2)
+		if len(parts) != 2 {
+			return fmt.Errorf("invalid credentials file format: expected username:password")
+		}
+		cfg.Username = parts[0]
+		cfg.Password = parts[1]
 	}
 	if port > 0 {
 		cfg.Port = port

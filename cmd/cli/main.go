@@ -49,9 +49,16 @@ func main() {
 				cfg.Password = password
 			}
 			if credFile != "" {
-				if err := config.ApplyCredentialsFile(cfg, credFile); err != nil {
-					return err
+				data, err := os.ReadFile(credFile)
+				if err != nil {
+					return fmt.Errorf("reading credentials file: %w", err)
 				}
+				parts := strings.SplitN(strings.TrimSpace(string(data)), ":", 2)
+				if len(parts) != 2 {
+					return fmt.Errorf("invalid credentials file format: expected username:password")
+				}
+				cfg.Username = parts[0]
+				cfg.Password = parts[1]
 			}
 			if cfg.RegistryURL == "" {
 				return fmt.Errorf("registry URL is required (--registry, REGISTRY_URL, or config file)")

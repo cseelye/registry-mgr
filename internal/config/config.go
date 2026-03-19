@@ -11,10 +11,9 @@ import (
 
 // Config holds all configuration for registry-mgr tools.
 type Config struct {
-	RegistryURL     string `yaml:"registry_url"`
-	Username        string `yaml:"username"`
-	Password        string `yaml:"password"`
-	CredentialsFile string `yaml:"credentials_file"`
+	RegistryURL string `yaml:"registry_url"`
+	Username    string `yaml:"username"`
+	Password    string `yaml:"password"`
 
 	// WebUI-specific
 	Port       int    `yaml:"port"`
@@ -47,26 +46,17 @@ func Load(configFile string) (*Config, error) {
 		}
 	}
 
-	// Layer 2: credentials file (path may come from yaml or env)
-	credFile := cfg.CredentialsFile
-	if v := os.Getenv("REGISTRY_CREDENTIALS_FILE"); v != "" {
-		credFile = v
-	}
-	if credFile != "" {
-		if err := ApplyCredentialsFile(cfg, credFile); err != nil {
-			return nil, err
-		}
-	}
-
-	// Layer 3: environment variables
+	// Layer 2: environment variables
 	if v := os.Getenv("REGISTRY_URL"); v != "" {
 		cfg.RegistryURL = v
 	}
-	if v := os.Getenv("REGISTRY_MGR_USERNAME"); v != "" {
-		cfg.Username = v
-	}
-	if v := os.Getenv("REGISTRY_MGR_PASSWORD"); v != "" {
-		cfg.Password = v
+	if v := os.Getenv("REGISTRY_CREDENTIALS"); v != "" {
+		parts := strings.SplitN(v, ":", 2)
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid REGISTRY_CREDENTIALS format: expected username:password")
+		}
+		cfg.Username = parts[0]
+		cfg.Password = parts[1]
 	}
 	if v := os.Getenv("WEBUI_PORT"); v != "" {
 		if port, err := strconv.Atoi(v); err == nil && port > 0 {
@@ -80,19 +70,3 @@ func Load(configFile string) (*Config, error) {
 	return cfg, nil
 }
 
-// ApplyCredentialsFile reads a "username:password" credentials file and sets
-// cfg.Username and cfg.Password.
-func ApplyCredentialsFile(cfg *Config, path string) error {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return fmt.Errorf("reading credentials file: %w", err)
-	}
-	line := strings.TrimSpace(string(data))
-	parts := strings.SplitN(line, ":", 2)
-	if len(parts) != 2 {
-		return fmt.Errorf("invalid credentials file format: expected username:password")
-	}
-	cfg.Username = parts[0]
-	cfg.Password = parts[1]
-	return nil
-}
