@@ -1,0 +1,36 @@
+{
+    "name": "Registry Manager",
+    "image": "mcr.microsoft.com/devcontainers/go:1.25",
+
+    "features": {
+        "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+    },
+
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "golang.go",
+                "ms-azuretools.vscode-docker"
+            ],
+            "settings": {
+                "go.toolsManagement.checkForUpdates": "local",
+                "go.useLanguageServer": true,
+                "go.lintTool": "golangci-lint",
+                "[go]": {
+                    "editor.formatOnSave": true,
+                    "editor.defaultFormatter": "golang.go"
+                }
+            }
+        }
+    },
+
+    "forwardPorts": [5000, 5080],
+    "portsAttributes": {
+        "5000": { "label": "Registry" },
+        "5080": { "label": "Web UI" }
+    },
+
+    "postCreateCommand": "go mod tidy",
+
+    "remoteUser": "vscode"
+}

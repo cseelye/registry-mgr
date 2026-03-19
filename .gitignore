@@ -1,0 +1,16 @@
+# Build output
+bin/
+dist/
+
+# Claude
+.claude/
+
+# Go
+go.sum
+
+# Secrets
+secrets/*
+!secrets/.gitkeep
+
+# macOS
+.DS_Store

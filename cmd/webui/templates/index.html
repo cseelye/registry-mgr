@@ -1,0 +1,68 @@
+{{define "content"}}
+<hgroup>
+    <h1>Images</h1>
+    {{if .Error}}<p class="error">{{.Error}}</p>{{end}}
+</hgroup>
+
+{{if .Images}}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+    <span>{{len .Images}} image(s)</span>
+    <div style="display:flex; gap:0.5rem;">
+        <button class="outline secondary" onclick="location.reload()">Refresh</button>
+        <button id="delete-selected-btn" class="contrast" onclick="deleteSelected()" disabled>Delete Selected</button>
+    </div>
+</div>
+
+<figure>
+<table>
+    <thead>
+        <tr>
+            <th><input type="checkbox" id="select-all"></th>
+            <th>Repository</th>
+            <th>Tag</th>
+            <th>Size</th>
+            <th>Created</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    {{range .Images}}
+        <tr>
+            <td><input type="checkbox" name="images" value="{{.Repository}}:{{.Tag}}"></td>
+            <td>{{.Repository}}</td>
+            <td>
+                <details>
+                    <summary>{{.Tag}}</summary>
+                    <dl>
+                        <dt>Digest</dt>
+                        <dd><code>{{.Digest}}</code></dd>
+                        <dt>OS / Architecture</dt>
+                        <dd>{{.OS}} / {{.Arch}}</dd>
+                        {{if .Labels}}
+                        <dt>Labels</dt>
+                        <dd>
+                            {{range $k, $v := .Labels}}<code>{{$k}}={{$v}}</code><br>{{end}}
+                        </dd>
+                        {{end}}
+                    </dl>
+                </details>
+            </td>
+            <td>{{formatBytes .Size}}</td>
+            <td>{{formatTime .CreatedAt}}</td>
+            <td class="actions">
+                <button class="contrast outline"
+                    data-repo="{{.Repository}}"
+                    data-tag="{{.Tag}}"
+                    onclick="deleteImage(this.dataset.repo, this.dataset.tag)">
+                    Delete
+                </button>
+            </td>
+        </tr>
+    {{end}}
+    </tbody>
+</table>
+</figure>
+{{else}}
+<p>No images found in the registry.</p>
+{{end}}
+{{end}}

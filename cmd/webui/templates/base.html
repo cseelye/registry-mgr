@@ -1,0 +1,96 @@
+{{define "base"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Registry Manager</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <style>
+        .tag-row td { border-top: none; padding-top: 0; }
+        .error { color: var(--pico-color-red-500); }
+        details summary { cursor: pointer; }
+        .actions { white-space: nowrap; }
+        table { table-layout: auto; }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <nav>
+            <ul><li><strong>Registry Manager</strong></li></ul>
+            <ul><li><small>{{.RegistryURL}}</small></li></ul>
+        </nav>
+        {{template "content" .}}
+    </main>
+
+    <dialog id="confirm-dialog">
+        <article>
+            <header><strong>Confirm Delete</strong></header>
+            <p id="confirm-message"></p>
+            <footer>
+                <button class="secondary" onclick="document.getElementById('confirm-dialog').close()">Cancel</button>
+                <button id="confirm-btn" class="contrast">Delete</button>
+            </footer>
+        </article>
+    </dialog>
+
+    <script>
+        document.getElementById('select-all')?.addEventListener('change', function() {
+            document.querySelectorAll('input[name="images"]').forEach(cb => cb.checked = this.checked);
+            updateDeleteSelectedBtn();
+        });
+
+        document.querySelectorAll('input[name="images"]').forEach(cb => {
+            cb.addEventListener('change', updateDeleteSelectedBtn);
+        });
+
+        function updateDeleteSelectedBtn() {
+            const count = document.querySelectorAll('input[name="images"]:checked').length;
+            const btn = document.getElementById('delete-selected-btn');
+            if (btn) btn.disabled = count === 0;
+        }
+
+        function showConfirm(message, onConfirm) {
+            document.getElementById('confirm-message').textContent = message;
+            const btn = document.getElementById('confirm-btn');
+            btn.onclick = function() {
+                document.getElementById('confirm-dialog').close();
+                onConfirm();
+            };
+            document.getElementById('confirm-dialog').showModal();
+        }
+
+        function deleteImage(repo, tag) {
+            showConfirm('Delete ' + repo + ':' + tag + '?', function() {
+                submitDelete([repo + ':' + tag]);
+            });
+        }
+
+        function deleteSelected() {
+            const selected = Array.from(document.querySelectorAll('input[name="images"]:checked')).map(cb => cb.value);
+            if (selected.length === 0) return;
+            const list = selected.join(', ');
+            const msg = 'Delete ' + selected.length + ' image(s)?\n' + list;
+            showConfirm(msg, function() {
+                submitDelete(selected);
+            });
+        }
+
+        function submitDelete(images) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/delete';
+            images.forEach(function(img) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'images';
+                input.value = img;
+                form.appendChild(input);
+            });
+            document.body.appendChild(form);
+            form.submit();
+        }
+    </script>
+</body>
+</html>
+{{end}}

@@ -1,0 +1,63 @@
+services:
+  registry:
+    build:
+      context: docker/registry
+      args:
+        REGISTRY_VERSION: "3"
+    ports:
+      - "5500:5000"
+    volumes:
+      - registry-data:/var/lib/registry
+    secrets:
+      - registry_credentials
+    environment:
+      GC_ENABLED: "true"
+      GC_TIME: "03:00"
+      REGISTRY_HTTP_SECRET: "${REGISTRY_HTTP_SECRET:-changeme}"
+    restart: unless-stopped
+    networks:
+      - registry-net
+
+  webui:
+    build:
+      context: .
+      dockerfile: docker/webui/Dockerfile
+    ports:
+      - "5080:5080"
+    secrets:
+      - registry_credentials
+    environment:
+      REGISTRY_MGR_URL: http://registry:5000
+      REGISTRY_MGR_CREDENTIALS_FILE: /run/secrets/registry_credentials
+    restart: unless-stopped
+    depends_on:
+      - registry
+    networks:
+      - registry-net
+
+  cli:
+    build:
+      context: .
+      dockerfile: docker/cli/Dockerfile
+    secrets:
+      - registry_credentials
+    environment:
+      REGISTRY_MGR_URL: http://registry:5000
+      REGISTRY_MGR_CREDENTIALS_FILE: /run/secrets/registry_credentials
+    depends_on:
+      - registry
+    networks:
+      - registry-net
+    profiles:
+      - cli
+
+volumes:
+  registry-data:
+
+secrets:
+  registry_credentials:
+    file: ./secrets/registry_credentials
+
+networks:
+  registry-net:
+    driver: bridge
