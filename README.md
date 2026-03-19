@@ -1,6 +1,6 @@
 # Registry Manager
 
-A vibe-coded management tool for a private [Docker registry](https://hub.docker.com/_/registry). Provides two interfaces — a web UI and a CLI — that share a common registry API client. Neither interface can push or pull images; they exist solely to inspect and delete them.
+A vibe-coded management tool for a private [Docker registry](https://hub.docker.com/_/registry). Provides two interfaces — a web UI and a CLI — that share a common registry API client. Neither interface can push or pull images; they exist solely to inspect and delete them. Also included is the registry with an automatic garbage collection run every night.
 
 ## Features
 
