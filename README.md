@@ -224,7 +224,7 @@ docker compose exec cli registry-cli list
 ```bash
 make build-cli
 
-./bin/registry-cli --registry http://localhost:5500 \
+./bin/registry-cli --registry http://localhost:5000 \
   --credentials-file ./secrets/registry_credentials \
   list
 ```

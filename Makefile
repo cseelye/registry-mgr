@@ -3,8 +3,11 @@
         dist-darwin dist-darwin-amd64 dist-darwin-arm64 \
         clean
 
-GOLANG_IMAGE := golang:1.25-alpine
-DIST_DIR     := dist
+GOLANG_IMAGE      := golang:1.25-alpine
+DIST_DIR          := dist
+
+# Override the registry host port for local dev (default in docker-compose.yml is 5000)
+export REGISTRY_HOST_PORT ?= 5500
 
 # Build both binaries as static executables (requires Go installed locally)
 build: build-webui build-cli
