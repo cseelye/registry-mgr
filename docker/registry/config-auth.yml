@@ -20,3 +20,7 @@ health:
     interval: 10s
     threshold: 3
 
+auth:
+  htpasswd:
+    realm: Registry Realm
+    path: /auth/htpasswd

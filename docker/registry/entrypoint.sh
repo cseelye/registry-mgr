@@ -6,24 +6,25 @@ GC_TIME="${GC_TIME:-03:00}"
 REGISTRY_PID_FILE="/var/run/registry.pid"
 
 # ---------------------------------------------------------------------------
-# Parse credentials and generate htpasswd
+# Parse credentials and generate htpasswd (optional)
 # ---------------------------------------------------------------------------
-if [ -z "$REGISTRY_CREDENTIALS" ]; then
-    echo "ERROR: REGISTRY_CREDENTIALS env var is not set" >&2
-    exit 1
+if [ -n "$REGISTRY_CREDENTIALS" ]; then
+    REGISTRY_USER="${REGISTRY_CREDENTIALS%%:*}"
+    REGISTRY_PASS="${REGISTRY_CREDENTIALS#*:}"
+
+    if [ -z "$REGISTRY_USER" ] || [ -z "$REGISTRY_PASS" ]; then
+        echo "ERROR: invalid REGISTRY_CREDENTIALS format (expected username:password)" >&2
+        exit 1
+    fi
+
+    mkdir -p /auth
+    htpasswd -Bbn "$REGISTRY_USER" "$REGISTRY_PASS" > /auth/htpasswd
+    echo "Credentials loaded for user: $REGISTRY_USER"
+    REGISTRY_CONFIG=/etc/docker/registry/config-auth.yml
+else
+    echo "No credentials configured, registry running without authentication"
+    REGISTRY_CONFIG=/etc/docker/registry/config.yml
 fi
-
-REGISTRY_USER="${REGISTRY_CREDENTIALS%%:*}"
-REGISTRY_PASS="${REGISTRY_CREDENTIALS#*:}"
-
-if [ -z "$REGISTRY_USER" ] || [ -z "$REGISTRY_PASS" ]; then
-    echo "ERROR: invalid REGISTRY_CREDENTIALS format (expected username:password)" >&2
-    exit 1
-fi
-
-mkdir -p /auth
-htpasswd -Bbn "$REGISTRY_USER" "$REGISTRY_PASS" > /auth/htpasswd
-echo "Credentials loaded for user: $REGISTRY_USER"
 
 # ---------------------------------------------------------------------------
 # Keep-alive loop: starts the registry and restarts it on unexpected exit.
@@ -31,7 +32,7 @@ echo "Credentials loaded for user: $REGISTRY_USER"
 run_registry() {
     while true; do
         echo "[registry] starting"
-        /bin/registry serve /etc/docker/registry/config.yml &
+        /bin/registry serve "$REGISTRY_CONFIG" &
         echo $! > "$REGISTRY_PID_FILE"
         wait $(cat "$REGISTRY_PID_FILE") 2>/dev/null || true
         echo "[registry] exited unexpectedly, restarting in 2s"
@@ -75,7 +76,7 @@ run_gc() {
 
     echo "[gc] running registry garbage-collect (readonly mode)"
     REGISTRY_STORAGE_MAINTENANCE_READONLY_ENABLED=true \
-        /bin/registry garbage-collect /etc/docker/registry/config.yml --delete-untagged
+        /bin/registry garbage-collect "$REGISTRY_CONFIG" --delete-untagged
 
     echo "[gc] garbage collection complete at $(date)"
 }
