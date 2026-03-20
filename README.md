@@ -7,15 +7,57 @@ A vibe-coded management tool for a private [Docker registry](https://hub.docker.
 ## Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/) with the Compose plugin
-- GNU Make
 
 The tools are written in Go, but the build is setup to run in a container so you don't need Go installed locally.
 
 ---
 
+## Quick Start
+
+### 1. Clone the repo
+
+```bash
+git clone https://github.com/cseelye/registry-mgr.git
+cd registry-mgr
+```
+
+### 2. Set credentials (optional)
+
+If you want the registry to require authentication, export `REGISTRY_CREDENTIALS` before starting the stack:
+
+```bash
+export REGISTRY_CREDENTIALS=admin:mysecretpassword
+```
+
+The registry container generates an `htpasswd` file from this at startup. The web UI and CLI containers use the same variable to authenticate their API calls. If `REGISTRY_CREDENTIALS` is not set, the registry runs without authentication.
+
+### 3. Start the stack
+
+```bash
+docker compose up -d
+```
+
+This builds the images (if not already built) and starts:
+- `registry` — the private registry on port `5000`
+- `webui` — the web UI on port `5080`
+
+### 4. Open the web UI
+
+Navigate to **http://localhost:5080** in your browser.
+
+### 5. Stop the stack
+
+```bash
+docker compose down
+```
+
+Registry data is stored in a named Docker volume (`registry_mgr_registry-data`) and persists across restarts.
+
+---
+
 ## Custom Registry Image
 
-The registry image (`docker/registry/`) extends the official `registry:3` image with:
+The registry image (`docker/registry/`) extends the official `registry` image with:
 
 - **Basic auth** (optional) — if `REGISTRY_CREDENTIALS` is set, `htpasswd` credentials are generated at startup; otherwise the registry runs without authentication
 - **Delete enabled** — `storage.delete.enabled: true` is set in the registry config
@@ -36,7 +78,7 @@ Configure GC via environment variables in `docker-compose.yml`:
 | `GC_ENABLED` | `true` | Enable/disable automatic GC |
 | `GC_TIME` | `03:00` | Time of day to run GC (24h `HH:MM`) |
 
-### Build argument
+### Registry version
 
 The base registry version is configurable at build time:
 
@@ -94,23 +136,17 @@ Open **http://localhost:5080** in your browser.
 
 ## Using the CLI
 
-### Via make/Docker Compose
+### Via Docker Compose
 
 ```bash
-make run-cli ARGS="<command> [flags]"
+docker compose run --rm cli <command> [flags]
 
 # Examples
-make run-cli ARGS="list"
-make run-cli ARGS="list -l"
-make run-cli ARGS="inspect alpine:3.19"
-make run-cli ARGS="delete --dry-run 'alpine:*'"
-make run-cli ARGS="delete -f busybox:latest"
-```
-
-### Via docker exec
-
-```bash
-docker compose exec cli registry-cli list
+docker compose run --rm cli list
+docker compose run --rm cli list -l
+docker compose run --rm cli inspect alpine:3.19
+docker compose run --rm cli delete --dry-run 'alpine:*'
+docker compose run --rm cli delete -f busybox:latest
 ```
 
 ### As a native binary
@@ -217,40 +253,6 @@ make dist-darwin-arm64
 ```
 
 Binaries are written to `dist/<os>-<arch>/` (e.g. `dist/darwin-arm64/registry-cli`). Builds run inside a Docker container so no local Go install is required. Binaries are fully static (`CGO_ENABLED=0`) and suitable for running natively on any Linux/macOS host or copying into a container.
-
----
-
-## Running Locally
-
-### 1. Set credentials
-
-Pass credentials via the `REGISTRY_CREDENTIALS` environment variable:
-
-```bash
-export REGISTRY_CREDENTIALS=admin:mysecretpassword
-```
-
-The registry container generates an `htpasswd` file from this at startup. The web UI and CLI containers use the same variable to authenticate their API calls. If `REGISTRY_CREDENTIALS` is not set, the registry runs without authentication.
-
-### 2. Start the stack
-
-```bash
-make up
-```
-
-This starts:
-- `registry` — the custom registry on port `5000`
-- `webui` — the web UI on port `5080`
-
-The CLI service is excluded from `make up` (it uses a Compose profile). See [Using the CLI](#using-the-cli).
-
-### 3. Stop the stack
-
-```bash
-make down
-```
-
-Registry data is stored in a named Docker volume (`registry_mgr_registry-data`) and persists across restarts.
 
 ---
 
