@@ -2,7 +2,6 @@
 
 A vibe-coded management tool for a private [Docker registry](https://hub.docker.com/_/registry). Provides a web UI and a CLI that share a common registry API client. Neither interface can push or pull images; they exist solely to inspect and delete them. Also included is the registry image itself enhanced with an automatic garbage collection run every night.
 
----
 
 ## Prerequisites
 
@@ -10,7 +9,6 @@ A vibe-coded management tool for a private [Docker registry](https://hub.docker.
 
 The tools are written in Go, but the build is setup to run in a container so you don't need Go installed locally.
 
----
 
 ## Quick Start
 
@@ -41,6 +39,13 @@ This builds the images (if not already built) and starts:
 - `registry` — the private registry on port `5000`
 - `webui` — the web UI on port `5080`
 
+> **macOS note:** Port 5000 conflicts with AirPlay Receiver on macOS Monterey and later. Set `REGISTRY_HOST_PORT` to a different port before starting the stack:
+> ```bash
+> export REGISTRY_HOST_PORT=5500
+> docker compose up -d
+> ```
+> The registry will be available on the port you set instead of `5000`.
+
 ### 4. Open the web UI
 
 Navigate to **http://localhost:5080** in your browser.
@@ -53,7 +58,6 @@ docker compose down
 
 Registry data is stored in a named Docker volume (`registry_mgr_registry-data`) and persists across restarts.
 
----
 
 ## Custom Registry Image
 
@@ -86,7 +90,6 @@ The base registry version is configurable at build time:
 docker build --build-arg REGISTRY_VERSION=3 docker/registry/
 ```
 
----
 
 ## Configuration
 
@@ -121,7 +124,6 @@ Pass the config file path with `--config /path/to/config.yaml`.
 | `WEBUI_PORT` | Web UI listen port (default `5080`) |
 | `WEBUI_LISTEN` | Web UI listen address (default `0.0.0.0`) |
 
----
 
 ## Using the Web UI
 
@@ -132,7 +134,6 @@ Open **http://localhost:5080** in your browser.
 - **Delete multiple tags** — check the boxes, click Delete Selected; confirm in the dialog
 - **Refresh** — click the Refresh button to reload the image list without a full browser refresh
 
----
 
 ## Using the CLI
 
@@ -201,7 +202,6 @@ Pattern examples:
 
 Without `--force`, the CLI will list the matching images and prompt `[y/N]` before deleting.
 
----
 
 ## Architecture
 
@@ -228,7 +228,6 @@ Both `registry-cli` and `registry-webui` are compiled as fully static Go binarie
 
 The tool speaks the [Docker Registry HTTP API V2](https://distribution.github.io/distribution/spec/api/). It supports both OCI (`application/vnd.oci.image.manifest.v1+json`) and Docker v2 (`application/vnd.docker.distribution.manifest.v2+json`) manifest formats.
 
----
 
 ## Building
 
@@ -254,7 +253,6 @@ make dist-darwin-arm64
 
 Binaries are written to `dist/<os>-<arch>/` (e.g. `dist/darwin-arm64/registry-cli`). Builds run inside a Docker container so no local Go install is required. Binaries are fully static (`CGO_ENABLED=0`) and suitable for running natively on any Linux/macOS host or copying into a container.
 
----
 
 ## Development
 
