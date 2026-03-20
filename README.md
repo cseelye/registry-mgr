@@ -1,42 +1,6 @@
 # Registry Manager
 
-A vibe-coded management tool for a private [Docker registry](https://hub.docker.com/_/registry). Provides two interfaces — a web UI and a CLI — that share a common registry API client. Neither interface can push or pull images; they exist solely to inspect and delete them. Also included is the registry with an automatic garbage collection run every night.
-
-## Features
-
-- List all repositories and tags in the registry
-- Inspect detailed image metadata (digest, size, creation time, OS, architecture, labels)
-- Delete images by tag, with wildcard pattern support
-- Web UI with expandable image details, multi-select delete, and confirmation dialogs
-- CLI with `--dry-run`, `--force`, and wildcard patterns (`repo:*`, `*:tag`, `repo:tag*`)
-- Automated nightly garbage collection built into the registry container
-
----
-
-## Architecture
-
-```
-registry_mgr/
-├── cmd/
-│   ├── cli/          # CLI binary entry point
-│   └── webui/        # Web UI binary entry point + HTML templates
-├── internal/
-│   ├── config/       # Layered config loading (flags > env > secret file > yaml)
-│   ├── models/       # Shared data types
-│   └── registry/     # Docker Registry HTTP API V2 client
-├── docker/
-│   ├── cli/          # Dockerfile for CLI scratch container
-│   ├── registry/     # Custom registry image (Dockerfile, config, entrypoint)
-│   └── webui/        # Dockerfile for web UI scratch container
-├── docker-compose.yml
-└── Makefile
-```
-
-Both `registry-cli` and `registry-webui` are compiled as fully static Go binaries and deployed in `scratch` containers. The registry image is based on `registry:3` and extended with automated garbage collection.
-
-### Registry API
-
-The tool speaks the [Docker Registry HTTP API V2](https://distribution.github.io/distribution/spec/api/). It supports both OCI (`application/vnd.oci.image.manifest.v1+json`) and Docker v2 (`application/vnd.docker.distribution.manifest.v2+json`) manifest formats.
+A vibe-coded management tool for a private [Docker registry](https://hub.docker.com/_/registry). Provides a web UI and a CLI that share a common registry API client. Neither interface can push or pull images; they exist solely to inspect and delete them. Also included is the registry image itself enhanced with an automatic garbage collection run every night.
 
 ---
 
@@ -45,112 +9,7 @@ The tool speaks the [Docker Registry HTTP API V2](https://distribution.github.io
 - [Docker](https://docs.docker.com/get-docker/) with the Compose plugin
 - GNU Make
 
-To build the CLI as a native binary, Go 1.25+ is also required.
-
----
-
-## Configuration
-
-Both binaries share the same configuration system. Settings are resolved in this order (highest priority first):
-
-| Priority | Source |
-|---|---|
-| 1 | CLI flags |
-| 2 | Environment variables |
-| 3 | Credentials file (`username:password`) |
-| 4 | YAML config file |
-
-### YAML config file
-
-```yaml
-registry_url: http://localhost:5000
-username: admin
-password: secret
-
-# Web UI only
-port: 5080
-listen_addr: 0.0.0.0
-```
-
-Pass the config file path with `--config /path/to/config.yaml`.
-
-### Environment variables
-
-| Variable | Description |
-|---|---|
-| `REGISTRY_URL` | Registry URL |
-| `REGISTRY_MGR_USERNAME` | Username |
-| `REGISTRY_MGR_PASSWORD` | Password |
-| `REGISTRY_CREDENTIALS_FILE` | Path to `username:password` file |
-| `WEBUI_PORT` | Web UI listen port (default `5080`) |
-| `WEBUI_LISTEN` | Web UI listen address (default `0.0.0.0`) |
-
-### Credentials file
-
-A plain text file containing `username:password` on a single line:
-
-```
-admin:mysecretpassword
-```
-
----
-
-## Building
-
-### Docker images (recommended)
-
-```bash
-make docker-build
-```
-
-This builds all three images: `registry_mgr-registry`, `registry_mgr-webui`, and `registry_mgr-cli`.
-
-### Native CLI binary
-
-Requires Go 1.25+.
-
-```bash
-make build          # builds both binaries to bin/
-make build-cli      # CLI only  → bin/registry-cli
-make build-webui    # web UI only → bin/registry-webui
-```
-
-The binaries are built with `CGO_ENABLED=0` and are fully static — suitable for running natively on any Linux/macOS host or copying into a container.
-
----
-
-## Deployment
-
-### 1. Create the credentials file
-
-```bash
-mkdir -p secrets
-echo "admin:mysecretpassword" > secrets/registry_credentials
-```
-
-The credentials file is used in two ways:
-- The registry container generates an `htpasswd` file from it for authentication
-- The web UI and CLI containers read the plaintext credentials to authenticate their API calls
-
-### 2. Start the stack
-
-```bash
-make up
-```
-
-This starts:
-- `registry` — the custom registry on port `5000`
-- `webui` — the web UI on port `5080`
-
-The CLI service is excluded from `make up` (it uses a Compose profile). See [Using the CLI](#using-the-cli).
-
-### 3. Stop the stack
-
-```bash
-make down
-```
-
-Registry data is stored in a named Docker volume (`registry_mgr_registry-data`) and persists across restarts.
+The tools are written in Go, but the build is setup to run in a container so you don't need Go installed locally.
 
 ---
 
@@ -158,7 +17,7 @@ Registry data is stored in a named Docker volume (`registry_mgr_registry-data`) 
 
 The registry image (`docker/registry/`) extends the official `registry:3` image with:
 
-- **Basic auth** — `htpasswd` credentials are generated at startup from the credentials file
+- **Basic auth** (optional) — if `REGISTRY_CREDENTIALS` is set, `htpasswd` credentials are generated at startup; otherwise the registry runs without authentication
 - **Delete enabled** — `storage.delete.enabled: true` is set in the registry config
 - **Automated garbage collection** — a nightly GC run is built into the container's entrypoint
 
@@ -187,6 +46,41 @@ docker build --build-arg REGISTRY_VERSION=3 docker/registry/
 
 ---
 
+## Configuration
+
+Both binaries share the same configuration system. Settings are resolved in this order (highest priority first):
+
+| Priority | Source |
+|---|---|
+| 1 | CLI flags |
+| 2 | Environment variables |
+| 3 | YAML config file |
+
+### YAML config file
+
+```yaml
+registry_url: http://localhost:5000
+username: admin
+password: secret
+
+# Web UI only
+port: 5080
+listen_addr: 0.0.0.0
+```
+
+Pass the config file path with `--config /path/to/config.yaml`.
+
+### Environment variables
+
+| Variable | Description |
+|---|---|
+| `REGISTRY_URL` | Registry URL |
+| `REGISTRY_CREDENTIALS` | Credentials as `username:password` |
+| `WEBUI_PORT` | Web UI listen port (default `5080`) |
+| `WEBUI_LISTEN` | Web UI listen address (default `0.0.0.0`) |
+
+---
+
 ## Using the Web UI
 
 Open **http://localhost:5080** in your browser.
@@ -200,7 +94,7 @@ Open **http://localhost:5080** in your browser.
 
 ## Using the CLI
 
-### Via Docker Compose (recommended)
+### Via make/Docker Compose
 
 ```bash
 make run-cli ARGS="<command> [flags]"
@@ -222,10 +116,10 @@ docker compose exec cli registry-cli list
 ### As a native binary
 
 ```bash
-make build-cli
+make dist-darwin-arm64  # or the appropriate platform target
 
-./bin/registry-cli --registry http://localhost:5000 \
-  --credentials-file ./secrets/registry_credentials \
+./dist/darwin-arm64/registry-cli --registry http://localhost:5000 \
+  --username admin --password mysecretpassword \
   list
 ```
 
@@ -270,6 +164,93 @@ Pattern examples:
 ```
 
 Without `--force`, the CLI will list the matching images and prompt `[y/N]` before deleting.
+
+---
+
+## Architecture
+
+```
+registry_mgr/
+├── cmd/
+│   ├── cli/          # CLI binary entry point
+│   └── webui/        # Web UI binary entry point + HTML templates
+├── internal/
+│   ├── config/       # Layered config loading (flags > env > yaml)
+│   ├── models/       # Shared data types
+│   └── registry/     # Docker Registry HTTP API V2 client
+├── docker/
+│   ├── cli/          # Dockerfile for CLI scratch container
+│   ├── registry/     # Custom registry image (Dockerfile, config, entrypoint)
+│   └── webui/        # Dockerfile for web UI scratch container
+├── docker-compose.yml
+└── Makefile
+```
+
+Both `registry-cli` and `registry-webui` are compiled as fully static Go binaries and deployed in `scratch` containers. The registry image is based on `registry:3` and extended with automated garbage collection.
+
+### Registry API
+
+The tool speaks the [Docker Registry HTTP API V2](https://distribution.github.io/distribution/spec/api/). It supports both OCI (`application/vnd.oci.image.manifest.v1+json`) and Docker v2 (`application/vnd.docker.distribution.manifest.v2+json`) manifest formats.
+
+---
+
+## Building
+
+### Docker images
+
+```bash
+make docker-build
+```
+
+This builds all three images: `registry_mgr-registry`, `registry_mgr-webui`, and `registry_mgr-cli`.
+
+### Native binaries
+
+```bash
+make dist               # all platforms (linux + darwin, amd64 + arm64)
+make dist-linux         # linux/amd64 and linux/arm64
+make dist-darwin        # darwin/amd64 and darwin/arm64
+make dist-linux-amd64   # single platform
+make dist-linux-arm64
+make dist-darwin-amd64
+make dist-darwin-arm64
+```
+
+Binaries are written to `dist/<os>-<arch>/` (e.g. `dist/darwin-arm64/registry-cli`). Builds run inside a Docker container so no local Go install is required. Binaries are fully static (`CGO_ENABLED=0`) and suitable for running natively on any Linux/macOS host or copying into a container.
+
+---
+
+## Running Locally
+
+### 1. Set credentials
+
+Pass credentials via the `REGISTRY_CREDENTIALS` environment variable:
+
+```bash
+export REGISTRY_CREDENTIALS=admin:mysecretpassword
+```
+
+The registry container generates an `htpasswd` file from this at startup. The web UI and CLI containers use the same variable to authenticate their API calls. If `REGISTRY_CREDENTIALS` is not set, the registry runs without authentication.
+
+### 2. Start the stack
+
+```bash
+make up
+```
+
+This starts:
+- `registry` — the custom registry on port `5000`
+- `webui` — the web UI on port `5080`
+
+The CLI service is excluded from `make up` (it uses a Compose profile). See [Using the CLI](#using-the-cli).
+
+### 3. Stop the stack
+
+```bash
+make down
+```
+
+Registry data is stored in a named Docker volume (`registry_mgr_registry-data`) and persists across restarts.
 
 ---
 
